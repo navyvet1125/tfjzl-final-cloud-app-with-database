@@ -1,3 +1,4 @@
+""" This module contains the models for the onlinecourse app. """
 import sys
 from django.utils.timezone import now
 try:
@@ -12,6 +13,7 @@ import uuid
 
 # Instructor model
 class Instructor(models.Model):
+    """ This class represents an instructor. """
     user = models.ForeignKey(
         settings.AUTH_USER_MODEL,
         on_delete=models.CASCADE,
@@ -25,6 +27,7 @@ class Instructor(models.Model):
 
 # Learner model
 class Learner(models.Model):
+    """ This class represents a learner. """
     user = models.ForeignKey(
         settings.AUTH_USER_MODEL,
         on_delete=models.CASCADE,
@@ -54,6 +57,7 @@ class Learner(models.Model):
 
 # Course model
 class Course(models.Model):
+    """ This class represents a course."""
     name = models.CharField(null=False, max_length=30, default='online course')
     image = models.ImageField(upload_to='course_images/')
     description = models.CharField(max_length=1000)
@@ -70,6 +74,7 @@ class Course(models.Model):
 
 # Lesson model
 class Lesson(models.Model):
+    """ This class represents a lesson. """
     title = models.CharField(max_length=200, default="title")
     order = models.IntegerField(default=0)
     course = models.ForeignKey(Course, on_delete=models.CASCADE)
@@ -77,9 +82,11 @@ class Lesson(models.Model):
 
 
 # Enrollment model
-# <HINT> Once a user enrolled a class, an enrollment entry should be created between the user and course
+# <HINT> Once a user enrolled a class, 
+# an enrollment entry should be created between the user and course
 # And we could use the enrollment to track information such as exam submissions
 class Enrollment(models.Model):
+    """ This class represents an enrollment. """
     AUDIT = 'audit'
     HONOR = 'honor'
     BETA = 'BETA'
@@ -95,9 +102,35 @@ class Enrollment(models.Model):
     rating = models.FloatField(default=5.0)
 
 
-# One enrollment could have multiple submission
-# One submission could have multiple choices
-# One choice could belong to multiple submissions
-#class Submission(models.Model):
-#    enrollment = models.ForeignKey(Enrollment, on_delete=models.CASCADE)
-#    choices = models.ManyToManyField(Choice)
+class Question(models.Model):
+    """ This class represents a question. """
+    course = models.ForeignKey(Course, on_delete=models.CASCADE)
+    content = models.CharField(max_length=200)
+    grade = models.FloatField()
+
+    def __str__(self):
+        return "Question: " + self.content 
+
+        # method to calculate if the learner gets the score of the question
+    def is_get_score(self, selected_ids):
+        """ This method checks if the learner gets the score of the question."""
+        all_answers = self.choice_set.filter(is_correct=True).count()
+        selected_correct = self.choice_set.filter(is_correct=True, id__in=selected_ids).count()
+        if all_answers == selected_correct:
+            return True
+        else:
+            return False
+
+class Choice(models.Model):
+    """ This class represents a choice. """
+    question = models.ForeignKey(Question, on_delete=models.CASCADE)
+    content = models.CharField(max_length=200)
+    is_correct = models.BooleanField(default=False)
+
+    def __str__(self):
+        return "Choice: " + self.content
+class Submission(models.Model):
+    """ This class represents a submission. """
+    enrollment = models.ForeignKey(Enrollment, on_delete=models.CASCADE)
+    choices = models.ManyToManyField(Choice)
+    submitted_at = models.DateTimeField(default=now)
